@@ -1,7 +1,7 @@
-
 package main
 
 import (
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -9,11 +9,13 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func indexHandler(w http.ResponseWriter, r *http.Request){
-	w.Write([]byte("<h1>Hello World</h1>"))
+var tpl = template.Must(template.ParseFiles("index.html"))
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	tpl.Execute(w, nil)
 }
 
-func main(){
+func main() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("Error loading env file")
@@ -29,4 +31,3 @@ func main(){
 	mux.HandleFunc("/", indexHandler)
 	http.ListenAndServe(":"+port, mux)
 }
-
