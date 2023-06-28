@@ -2,13 +2,17 @@ package main
 
 import (
 	"fmt"
+	"github.com/freshman-tech/news-demo-starter-files/news"
+	"github.com/joho/godotenv"
 	"html/template"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
-	"github.com/joho/godotenv"
+	_ "github.com/freshman-tech/news-demo-starter-files/news"
+	_ "time"
 )
 
 var tpl = template.Must(template.ParseFiles("index.html"))
@@ -45,6 +49,14 @@ func main() {
 	if port == "" {
 		port = "3000"
 	}
+
+	apiKey := os.Getenv("NEWS_API_KEY")
+	if apiKey == "" {
+		log.Fatalln("ENV: NEWS_API_KEY must be set")
+	}
+
+	myClient := &http.Client{Timeout: 10 * time.Second}
+	newsApi := news.NewClient(myClient, apiKey, 20)
 
 	fs := http.FileServer(http.Dir("assets"))
 
