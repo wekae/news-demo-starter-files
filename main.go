@@ -1,24 +1,44 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/freshman-tech/news-demo-starter-files/news"
 	"github.com/joho/godotenv"
 	"html/template"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
+	_ "strconv"
 	"time"
 
 	_ "github.com/freshman-tech/news-demo-starter-files/news"
-	_ "time"
 )
+
+type Search struct {
+	Query      string
+	NextPage   int
+	TotalPages int
+	Results    *news.Results
+}
 
 var tpl = template.Must(template.ParseFiles("index.html"))
 
+/*
+refactored indexHandler so that the template is no longer executed directly to ResponseWriter
+*/
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	tpl.Execute(w, nil)
+	buf := &bytes.Buffer{}
+	err := tpl.Execute(buf, nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	buf.WriteTo(w)
 }
 
 /*
@@ -47,6 +67,34 @@ func searchHandler(newsApi *news.Client) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		nextPage, err := strconv.Atoi(page)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		search := &Search{
+			Query:      searchQuery,
+			NextPage:   nextPage,
+			TotalPages: int(math.Ceil(float64(results.TotalResults) / float64(newsApi.PageSize))),
+			Results:    results,
+		}
+
+		/*
+			The template is first executed into an empty buffer so that we can check for errors.
+			After that, the buffer is written to the ResponseWriter.
+			If we execute the template directly on ResponseWriter,
+			we won’t be able to check for errors so this is a better way to do it.
+		*/
+		buf := &bytes.Buffer{}
+		err = tpl.Execute(buf, search)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		buf.WriteTo(w)
 
 		fmt.Printf("%+v", results)
 	}
