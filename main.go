@@ -21,22 +21,30 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	tpl.Execute(w, nil)
 }
 
-func searchHandler(w http.ResponseWriter, r *http.Request) {
-	u, err := url.Parse(r.URL.String())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+/*
+*
+The searchHandler function has been changed.
+It now accepts a pointer to news.Client and returns an anonymous function which satisfies the http.HandlerFunc type.
+This function closes over the newsapi parameter which means it will have access to it whenever it is called.
+*/
+func searchHandler(newsApi *news.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		u, err := url.Parse(r.URL.String())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-	params := u.Query()
-	searchQuery := params.Get("q")
-	page := params.Get("page")
-	if page == "" {
-		page = "1"
-	}
+		params := u.Query()
+		searchQuery := params.Get("q")
+		page := params.Get("page")
+		if page == "" {
+			page = "1"
+		}
 
-	fmt.Println("Search Query is: ", searchQuery)
-	fmt.Println("Page is: ", page)
+		fmt.Println("Search Query is: ", searchQuery)
+		fmt.Println("Page is: ", page)
+	}
 }
 
 func main() {
@@ -63,7 +71,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/assets/", http.StripPrefix("/assets/", fs))
 
-	mux.HandleFunc("/search", searchHandler)
+	mux.HandleFunc("/search", searchHandler(newsApi))
 	mux.HandleFunc("/", indexHandler)
 	http.ListenAndServe(":"+port, mux)
 }
