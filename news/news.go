@@ -67,6 +67,14 @@ type Article struct {
 	Content     string    `json:"content"`
 }
 
+/*
+* Add a method to the Article struct and use that to format the date instead of using the default value
+ */
+func (a *Article) FormatPublishedDate() string {
+	year, month, day := a.PublishedAt.Date()
+	return fmt.Sprintf("%v, %d, %d", month, day, year)
+}
+
 type Results struct {
 	Status       string    `json:"status"`
 	TotalResults int       `json:"totalResults"`
